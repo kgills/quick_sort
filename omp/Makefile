@@ -1,6 +1,5 @@
 CC=pgcc
-C_FLAGS=-O4 -mcmodel=medium -acc -Munroll -ta=tesla,8.0 -Minfo=accel
-# C_FLAGS=-O4 -mcmodel=medium -Munroll
+C_FLAGS=-O4 -mcmodel=medium -mp -Munroll
 OUTPUT=quick.out
 
 all: quick.c

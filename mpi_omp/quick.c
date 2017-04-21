@@ -81,8 +81,13 @@ void quicksort(unsigned* array, unsigned len)
     array[0] = temp;
 
     // Sort the partitions
-    quicksort(array, i-1);
-    quicksort(array+i, len-i); 
+    #pragma omp sections
+    {
+        #pragma omp section
+        quicksort(array, i-1);
+        #pragma omp section
+        quicksort(array+i, len-i); 
+    }
 }   
    
 

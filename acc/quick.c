@@ -12,11 +12,10 @@
 #include <time.h>
 
 /* Defines */
-#define ARRAY_LEN       32768
-#define ARRAY_LEN_LOG   15
+#define ARRAY_LEN       16384
 #define MAX_VAL         1000000
 
-float restrict array[ARRAY_LEN];
+unsigned restrict array[ARRAY_LEN];
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define ABS(a) (((a)<0)?((-(a))):(a))
@@ -32,7 +31,7 @@ float restrict array[ARRAY_LEN];
  * @param 
  *       @name   array
  *       @dir    I
- *       @type   float*
+ *       @type   unsigned*
  *       @brief  Array  to be sorted.
  * @param 
  *       @name   len
@@ -44,9 +43,9 @@ float restrict array[ARRAY_LEN];
  *
 */
 #pragma acc routine
-void quicksort(float restrict* array, unsigned len)
+void quicksort(unsigned restrict* array, unsigned len)
 {
-    float pivot, temp;
+    unsigned pivot, temp;
     unsigned i, j;
 
     // Return if nothing to be sorted
@@ -79,11 +78,8 @@ void quicksort(float restrict* array, unsigned len)
     array[0] = temp;
 
     // Sort the partitions
-    #pragma acc copy(array[:ARRAY_LEN])
-    {
-        quicksort(array, i-1);
-        quicksort(array+i, len-i);
-    }
+    quicksort(array, i-1);
+    quicksort(array+i, len-i);
 }   
    
 
@@ -109,18 +105,18 @@ int main(int argc, char *argv[])
     int i;
     struct timeval start_time, stop_time, elapsed_time;
     double etime, flops;
-    float sum;
+    unsigned sum;
 
     // Initialize the array to sort
     srand(time(NULL));
     for(i = 0; i < ARRAY_LEN; i++) {
-        array[i] = (float)(ARRAY_LEN-i);
+        array[i] = (unsigned)(ARRAY_LEN-i);
     }
 
     if(ARRAY_LEN < 32) {
         printf("Unsorted: ");
         for(i = 0; i < ARRAY_LEN; i++) {
-            printf("%f ", array[i]);
+            printf("%d ", array[i]);
         }
         printf("\n");
     }
@@ -128,6 +124,7 @@ int main(int argc, char *argv[])
     gettimeofday(&start_time, NULL);
 
     // Execute the algorithm
+    #pragma acc copy(array[ARRAY_LEN])
     quicksort(array, ARRAY_LEN);
 
     gettimeofday(&stop_time, NULL);
@@ -135,7 +132,7 @@ int main(int argc, char *argv[])
     if(ARRAY_LEN < 32) {
         printf("Sorted  : ");
         for(i = 0; i < ARRAY_LEN; i++) {
-            printf("%f ", array[i]);
+            printf("%d ", array[i]);
         }
         printf("\n");
     }
@@ -152,8 +149,8 @@ int main(int argc, char *argv[])
     etime = elapsed_time.tv_sec+elapsed_time.tv_usec/1000000.0;
 
 
-    flops = ((double)2 * (double)ARRAY_LEN * (double)ARRAY_LEN_LOG)/etime;
-    printf("%d, %f, %f, %d\n", ARRAY_LEN, etime, flops, 1);
+    flops = ((double)ARRAY_LEN)/etime;
+    printf("%d, %f, %f, %d\n", ARRAY_LEN, etime, flops, 8);
  
 
     return 0;

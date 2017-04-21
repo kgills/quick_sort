@@ -12,11 +12,10 @@
 #include <time.h>
 
 /* Defines */
-#define ARRAY_LEN   1024
-#define MAX_VAL     1000000
+#define ARRAY_LEN       16384
+#define MAX_VAL         1000000
 
-unsigned array[ARRAY_LEN];
-
+unsigned restrict array[ARRAY_LEN];
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define ABS(a) (((a)<0)?((-(a))):(a))
@@ -43,9 +42,10 @@ unsigned array[ARRAY_LEN];
  * @returns 0 for success, error status otherwise
  *
 */
-void quicksort(unsigned* array, unsigned len)
+void quicksort(unsigned restrict* array, unsigned len)
 {
-    unsigned pivot, temp, i, j;
+    unsigned pivot, temp;
+    unsigned i, j;
 
     // Return if nothing to be sorted
     if(len <= 1) {
@@ -77,8 +77,13 @@ void quicksort(unsigned* array, unsigned len)
     array[0] = temp;
 
     // Sort the partitions
-    quicksort(array, i-1);
-    quicksort(array+i, len-i); 
+    #pragma omp parallel sections 
+    {   
+        #pragma omp section
+        quicksort(array, i-1);
+        #pragma omp section
+        quicksort(array+i, len-i);
+    }
 }   
    
 
@@ -104,11 +109,12 @@ int main(int argc, char *argv[])
     int i;
     struct timeval start_time, stop_time, elapsed_time;
     double etime, flops;
+    unsigned sum;
 
     // Initialize the array to sort
     srand(time(NULL));
     for(i = 0; i < ARRAY_LEN; i++) {
-        array[i] = rand() % MAX_VAL;
+        array[i] = (unsigned)(ARRAY_LEN-i);
     }
 
     if(ARRAY_LEN < 32) {
@@ -142,14 +148,12 @@ int main(int argc, char *argv[])
         }
     }
 
-    printf("Array sorted\n");
-
     timersub(&stop_time, &start_time, &elapsed_time);    
     etime = elapsed_time.tv_sec+elapsed_time.tv_usec/1000000.0;
 
 
     flops = ((double)ARRAY_LEN)/etime;
-    printf("%d, %f, %f, %d\n", ARRAY_LEN, etime, flops, 1);
+    printf("%d, %f, %f, %d\n", ARRAY_LEN, etime, flops, 8);
  
 
     return 0;

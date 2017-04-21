@@ -46,6 +46,7 @@ unsigned array_c[ARRAY_LEN];
  * @returns 0 for success, error status otherwise
  *
 */
+#pragma acc routine
 void quicksort(unsigned* array, unsigned len)
 {
     unsigned pivot, temp;
@@ -81,8 +82,13 @@ void quicksort(unsigned* array, unsigned len)
     array[0] = temp;
 
     // Sort the partitions
-    quicksort(array, i-1);
-    quicksort(array+i, len-i); 
+    #pragma omp sections
+    {
+        #pragma omp section
+        quicksort(array, i-1);
+        #pragma omp section
+        quicksort(array+i, len-i); 
+    }
 }   
    
 
@@ -139,6 +145,7 @@ int main(int argc, char *argv[])
     gettimeofday(&start_time, NULL);
 
     // Execute the algorithm
+    #pragma copy(array[ARRAY_LEN/p])
     quicksort(array, ARRAY_LEN/p);
 
     // Select the samples
